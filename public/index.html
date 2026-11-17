@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diario bebé">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f2f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16181e" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Diario del bebé</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: una columna móvil (máx. 560px), barra de pestañas fija abajo, banner de actividad pegado arriba, botón + flotante */
+:root{
+  --bg:#f6f2f1; --surface:#ffffff; --surface-2:#f0eae9; --ink:#252935; --ink-2:#5c6170; --muted:#868a96; --line:#e8e1df;
+  --accent:#46589e; --accent-ink:#ffffff; --rose-soft:#f7dfe5; --rose-ink:#8c3550; --amber-soft:#faecd8; --amber-ink:#85550f;
+  --c-noche:#46589e; --c-siesta:#36a6b8; --c-desp:#e06a8a; --c-toma:#c98a28; --c-none:#ece6e4; --c-neutral:#7b8194;
+  --danger:#b4323f; --ok:#2f7d5b; --shadow:0 8px 28px rgba(60,40,50,.14);
+  --f-display:"New York", ui-serif, "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --f-body:-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --f-mono:ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --r-lg:20px; --r-md:14px; --r-sm:10px; --nav-h:64px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#16181e; --surface:#20232b; --surface-2:#2a2d36; --ink:#ece9ef; --ink-2:#b6b9c3; --muted:#8d919d; --line:#30343e;
+  --accent:#5e62c8; --accent-ink:#ffffff; --rose-soft:#3b2730; --rose-ink:#f2aec1; --amber-soft:#3a2f1e; --amber-ink:#e9bb6c;
+  --c-noche:#5e62c8; --c-siesta:#28a2c2; --c-desp:#cf6386; --c-toma:#b98428; --c-none:#2b2e37; --c-neutral:#8a90a3;
+  --danger:#f07c87; --ok:#6cc79c; --shadow:0 8px 28px rgba(0,0,0,.45); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#16181e; --surface:#20232b; --surface-2:#2a2d36; --ink:#ece9ef; --ink-2:#b6b9c3; --muted:#8d919d; --line:#30343e;
+  --accent:#5e62c8; --accent-ink:#ffffff; --rose-soft:#3b2730; --rose-ink:#f2aec1; --amber-soft:#3a2f1e; --amber-ink:#e9bb6c;
+  --c-noche:#5e62c8; --c-siesta:#28a2c2; --c-desp:#cf6386; --c-toma:#b98428; --c-none:#2b2e37; --c-neutral:#8a90a3;
+  --danger:#f07c87; --ok:#6cc79c; --shadow:0 8px 28px rgba(0,0,0,.45); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  padding-block:0 calc(var(--nav-h) + 96px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.wrap{max-width:560px;margin:0 auto}
+.tnum,.mono{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Banner de actividad */
+.live{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;gap:8px;padding-top:10px;background:var(--bg)}
+.live:empty{display:none}
+.lv{background:var(--rose-soft);color:var(--rose-ink);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.lv.feed{background:var(--amber-soft);color:var(--amber-ink)}
+.lv-head{display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;text-align:left}
+.lv-head .t{flex:1;font-weight:600;font-size:15px}
+.lv-head .clock{font-family:var(--f-mono);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.lv-head .chev{transition:transform .2s}
+.lv.open .chev{transform:rotate(180deg)}
+.lv-acts{display:flex;flex-wrap:wrap;gap:8px;padding:0 12px 12px}
+.lv-acts button{flex:1 1 auto;min-height:44px;padding:8px 14px;border-radius:12px;background:var(--surface);color:var(--ink);font-weight:600;font-size:14px}
+.lv-acts button.pri{background:var(--accent);color:var(--accent-ink)}
+
+/* Cabeceras */
+.vh{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:22px 0 10px}
+.vh h1{font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.eyebrow{margin:0 0 4px;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.sub{margin:4px 0 0;color:var(--ink-2)}
+h2{font-family:var(--f-display);font-size:22px;font-weight:700;margin:28px 0 12px;letter-spacing:-.005em}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--ink)}
+.icon-btn[aria-pressed="true"]{background:var(--surface-2)}
+
+/* Tarjetas e Inicio */
+.card{background:var(--surface);border-radius:var(--r-lg);padding:16px}
+.now{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.stat .k{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat b{display:block;font-size:22px;line-height:1.2;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.stat span:last-child{font-size:14px;color:var(--ink-2)}
+.hint{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;background:var(--amber-soft);color:var(--amber-ink);font-size:13px;font-weight:600}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.qb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:92px;padding:12px 6px;border-radius:var(--r-md);background:var(--surface);font-weight:600;font-size:14px;text-align:center;line-height:1.2}
+.qb .bub{width:40px;height:40px}
+.qb:active{transform:scale(.97)}
+.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tot{background:var(--surface);border-radius:var(--r-md);padding:12px 10px}
+.tot b{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.2}
+.tot span{font-size:12px;color:var(--muted);font-weight:600}
+.syncpill{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 6px;padding:9px 12px;border-radius:14px;font-size:14px;font-weight:600;background:var(--amber-soft);color:var(--amber-ink)}
+.syncpill.bad{background:var(--rose-soft);color:var(--rose-ink)}
+.syncpill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.syncpill button{margin-left:auto;font-weight:700;text-decoration:underline;min-height:32px}
+.login-lead{margin:6px 0 0;color:var(--ink-2);max-width:42ch}
+.who{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--surface-2);font-weight:700;font-size:13px;color:var(--ink)}
+
+/* Burbujas de icono */
+.bub{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none}
+.cat-sueno{background:color-mix(in srgb, var(--c-noche) 15%, var(--surface));color:var(--c-noche)}
+.cat-desp{background:var(--rose-soft);color:var(--c-desp)}
+.cat-alim{background:var(--amber-soft);color:var(--c-toma)}
+.cat-panal{background:color-mix(in srgb, var(--c-siesta) 15%, var(--surface));color:var(--c-siesta)}
+.cat-evento{background:var(--surface-2);color:var(--ink-2)}
+
+/* Controles */
+.seg{display:flex;background:var(--surface-2);border-radius:999px;padding:4px;gap:4px}
+.seg label{flex:1;position:relative}
+.seg input{position:absolute;opacity:0;inset:0;margin:0}
+.seg span{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:15px;color:var(--ink-2);text-align:center}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.seg.big span{min-height:46px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -4px;padding:2px 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:38px;padding:7px 14px;border-radius:999px;font-weight:600;font-size:15px;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--rose-soft);color:var(--rose-ink)}
+
+/* Diario */
+.daynav{display:flex;align-items:center;gap:6px;margin:4px 0 14px}
+.daynav .dl{flex:1;position:relative;text-align:center;font-weight:700;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--surface)}
+.daynav .dl input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.daynav .icon-btn{background:var(--surface)}
+.daynav .icon-btn:disabled{opacity:.35}
+.status{margin:12px 0 10px;color:var(--ink-2);font-size:15px}
+.tl-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.tz{font-size:12px;color:var(--muted)}
+.tl-wrap{overflow-x:auto;margin-top:6px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.tl{position:relative;width:100%;min-width:100%}
+.tl.zoom{width:320%}
+.tl .lab{font-size:13px;color:var(--muted);margin:10px 0 6px;position:sticky;left:0;display:inline-block}
+.track{position:relative;height:22px;border-radius:7px;background:var(--c-none);overflow:hidden}
+.track i{position:absolute;top:0;bottom:0;border-left:1px solid var(--surface);border-right:1px solid var(--surface)}
+.s-noche{background:var(--c-noche)} .s-siesta{background:var(--c-siesta)} .s-desp{background:var(--c-desp)}
+.track i.on{background-image:repeating-linear-gradient(135deg, transparent 0 6px, rgba(255,255,255,.28) 6px 9px)}
+.feeds{position:relative;height:40px;border-bottom:1px solid var(--line)}
+.fd{position:absolute;bottom:6px;transform:translateX(-50%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--amber-soft);color:var(--c-toma)}
+.fd svg.ic{width:16px;height:16px;stroke-width:2}
+.fd em{position:absolute;top:-9px;right:-11px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--rose-soft);color:var(--rose-ink);font-style:normal;font-size:11px;font-weight:700;display:grid;place-items:center}
+.grid-l{position:absolute;top:0;bottom:0;width:1px;background:var(--line);pointer-events:none}
+.now-l{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px;pointer-events:none;z-index:2}
+.axis{position:relative;height:22px;margin-top:6px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.axis span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.axis span:first-child{transform:none}
+.axis span:last-child{transform:translateX(-100%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:8px;border-radius:2px;display:inline-block}
+.legend svg.ic{width:15px;height:15px;color:var(--c-toma);stroke-width:2}
+.summary{margin:10px 0 0;font-size:14px;color:var(--ink-2)}
+.log{list-style:none;margin:10px 0 0;padding:0}
+.log li+li{border-top:1px solid var(--line)}
+.log button{display:flex;align-items:center;gap:14px;width:100%;padding:12px 0;text-align:left}
+.log .tm{font-family:var(--f-mono);font-size:17px;font-weight:600;width:52px;flex:none;font-variant-numeric:tabular-nums}
+.log .tx{min-width:0;flex:1}
+.log .tx b{display:block;font-size:16px}
+.log .tx span{display:block;color:var(--ink-2);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log .tx span.by{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.empty{padding:28px 8px;text-align:center;color:var(--muted)}
+
+/* Análisis */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--surface);border-radius:var(--r-md);padding:14px}
+.kpi .k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-size:24px;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--ink-2)}
+.chart{background:var(--surface);border-radius:var(--r-lg);padding:14px 12px 8px;margin-top:12px}
+.chart h3{margin:0 4px 2px;font-size:16px}
+.chart .read{margin:0 4px 6px;font-size:14px;color:var(--ink-2);min-height:21px;font-variant-numeric:tabular-nums}
+.chart svg{display:block;width:100%;height:auto}
+.chart .ax{fill:var(--muted);font-size:10px;font-family:var(--f-body)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .hit{fill:transparent;cursor:pointer}
+.chart .sel{fill:var(--surface-2)}
+.foot{font-size:13px;color:var(--muted);margin-top:10px}
+
+/* Notas y Perfil */
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field>span{font-size:13px;font-weight:700;color:var(--ink-2)}
+.inp{width:100%;min-height:46px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:16px}
+.inp:focus{border-color:var(--accent);outline:none}
+textarea.inp{min-height:96px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 18px;border-radius:14px;background:var(--surface-2);font-weight:700}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn.dan{background:transparent;color:var(--danger);border:1.5px solid currentColor}
+.btn.wide{width:100%}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btns .btn{flex:1 1 140px}
+.notes{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px}
+.notes li{background:var(--surface);border-radius:var(--r-md);padding:14px}
+.notes time{display:block;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.notes p{margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.notes button{color:var(--danger);font-size:14px;font-weight:600;min-height:32px}
+.sect{background:var(--surface);border-radius:var(--r-lg);padding:16px;margin-top:12px}
+.sect h3{margin:0 0 6px;font-size:17px}
+.sect p{margin:0 0 12px;color:var(--ink-2);font-size:15px}
+.sect ol{margin:0;padding-left:20px;color:var(--ink-2);font-size:15px;display:grid;gap:6px}
+.okchip{display:inline-block;padding:3px 10px;border-radius:999px;background:color-mix(in srgb, var(--ok) 16%, var(--surface));color:var(--ok);font-weight:700;font-size:13px}
+details summary{cursor:pointer;font-weight:600;color:var(--accent);min-height:36px;display:flex;align-items:center}
+.ver{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+
+/* Navegación y botón + */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--surface);border-top:1px solid var(--line);
+  padding:0 max(8px, env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px, env(safe-area-inset-left,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);text-decoration:none;font-size:11.5px;font-weight:600}
+nav.tabs a[aria-current="page"]{color:var(--ink)}
+nav.tabs a[aria-current="page"] svg{color:var(--accent)}
+.fab{position:fixed;z-index:9;right:max(18px, calc(env(safe-area-inset-right,0px) + 12px));bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));
+  width:62px;height:62px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:var(--shadow)}
+.fab svg.ic{width:28px;height:28px;stroke-width:2}
+@media (min-width:600px){ .fab{right:calc(50% - 280px + 4px)} }
+
+/* Hoja inferior */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,15,22,.42)}
+.sheet[hidden]{display:none!important}
+.panel{width:100%;max-width:560px;max-height:90%;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;
+  padding:8px max(18px, env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px, env(safe-area-inset-left,0px));
+  animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.panel-h h2{margin:0;font-size:24px}
+.types{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.types button{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 12px;border-radius:var(--r-md);background:var(--surface);font-weight:600;text-align:left;line-height:1.2}
+.amounts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.amounts button{min-height:38px;padding:6px 14px;border-radius:999px;background:var(--surface-2);font-weight:600}
+.err{color:var(--danger);font-weight:600;font-size:14px;margin:0 0 12px}
+.err:empty{display:none}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:var(--shadow);max-width:calc(100% - 32px);text-align:center}
+
+.sheet:not([hidden])~.toast{bottom:auto;top:calc(16px + env(safe-area-inset-top,0px))}
+/* Paseo virtual */
+.tour{position:fixed;inset:0;z-index:40}
+.tour-spot{position:fixed;border-radius:18px;box-shadow:0 0 0 200vmax rgba(12,12,22,.64);transition:top .25s,left .25s,width .25s,height .25s;pointer-events:none}
+.tour-card{position:fixed;left:max(12px, env(safe-area-inset-left,0px));right:max(12px, env(safe-area-inset-right,0px));margin:0 auto;max-width:520px;
+  background:var(--surface);color:var(--ink);border-radius:22px;padding:18px 18px 14px;box-shadow:var(--shadow);max-height:calc(100% - 40px);overflow:auto}
+.tour-card.bottom{bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.tour-card.top{top:calc(14px + env(safe-area-inset-top,0px))}
+.tour-card.mid{top:50%;transform:translateY(-50%)}
+.tour-step{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tour-card h2{margin:4px 0 8px;font-size:23px}
+.tour-card p{margin:0 0 10px;color:var(--ink-2);font-size:15.5px}
+.tour-ex{background:var(--amber-soft);color:var(--ink);border-radius:14px;padding:10px 12px;margin:0 0 10px;font-size:15px}
+.tour-ex b{display:block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amber-ink);margin-bottom:2px}
+.tour-li{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:7px;font-size:15px}
+.tour-li li{display:flex;gap:9px;align-items:flex-start}
+.tour-li svg.ic{width:19px;height:19px;stroke-width:2.2;margin-top:1px}
+.tour-li .y svg{color:var(--ok)} .tour-li .n svg{color:var(--danger)}
+.tour-dots{display:flex;gap:5px;margin:4px 0 12px}
+.tour-dots i{height:5px;flex:1;border-radius:3px;background:var(--line)}
+.tour-dots i.on{background:var(--accent)}
+.tour-nav{display:flex;gap:8px;align-items:center}
+.tour-nav .skip{margin-right:auto;color:var(--muted);font-weight:600;min-height:44px;padding:0 4px}
+.tour-nav .btn{min-height:44px;padding:8px 16px}
+.help-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;background:var(--surface);color:var(--ink-2);font-weight:600;font-size:14px;flex:none}
+@media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+</style>
+
+<div class="wrap">
+  <div class="live" id="live" aria-live="polite"></div>
+  <main id="view"></main>
+</div>
+<button class="fab" id="fab" aria-label="Añadir registro"></button>
+<nav class="tabs" aria-label="Secciones"><div class="in" id="tabs"></div></nav>
+<div class="sheet" id="sheet" hidden><div class="panel" id="panel" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+<div class="tour" id="tour" hidden><div class="tour-spot" id="tour-spot"></div><div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t"></div></div>
+
+<script>
+(()=>{
+'use strict';
+const MIN=60000,H=3600000,DAY=86400000,VERSION='2.0';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Iconos ---------- */
+const P={
+ moon:'<path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/>',
+ sun:'<circle cx="12" cy="12" r="3.6"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+ sunrise:'<path d="M7.5 16a4.5 4.5 0 0 1 9 0"/><path d="M3 19h18M12 4v4M9.5 6.5 12 4l2.5 2.5M4.6 12.4l1.4 1M19.4 12.4l-1.4 1"/>',
+ drop:'<path d="M12 3.5c3 4 6 7.1 6 10.4a6 6 0 0 1-12 0c0-3.3 3-6.4 6-10.4z"/>',
+ bottle:'<path d="M8.5 9h7v10a2.5 2.5 0 0 1-2.5 2.5h-2A2.5 2.5 0 0 1 8.5 19z"/><path d="M10 9V7h4v2M11 7l.4-3h1.2L13 7M8.5 13h3M8.5 16.5h3"/>',
+ bowl:'<path d="M3.5 11.5h17a8.5 7 0 0 1-17 0z"/><path d="M8 20h8M9.5 8c0-1.2 1.2-1.6 1.2-3M13.5 8c0-1.2 1.2-1.6 1.2-3"/>',
+ diaper:'<path d="M3.5 7h17v2.5a8.5 8.5 0 0 1-17 0z"/><path d="M8 7v2.5M16 7v2.5M9.5 16.5c1.6.9 3.4.9 5 0"/>',
+ star:'<path d="M12 3.8l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.8l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ home:'<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+ book:'<path d="M12 6.5C10.5 5 8 4.5 4 4.5v14c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-14c-4 0-6.5.5-8 2zM12 6.5v14"/>',
+ chart:'<path d="M4 20h16M7 16v-4M11 16V8M15 16v-6M19 16V5"/>',
+ note:'<path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M14.5 3.5V7.5h4M9 12h6M9 15.5h6"/>',
+ user:'<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/>',
+ left:'<path d="M14.5 5.5 8 12l6.5 6.5"/>', right:'<path d="M9.5 5.5 16 12l-6.5 6.5"/>', down:'<path d="M6 9.5l6 6 6-6"/>',
+ zoom:'<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/>',
+ close:'<path d="M6 6l12 12M18 6 6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+ help:'<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.6a2.4 2.4 0 0 1 4.6.9c0 1.7-2.3 2-2.3 3.5M12 16.8v.2"/>', shield:'<path d="M12 3.5 19 6v6c0 4.4-3 7.4-7 8.5-4-1.1-7-4.1-7-8.5V6z"/><path d="M9 12l2 2 4-4"/>'
+};
+const ic=(n,c='ic')=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+
+const TYPES={
+ sueno:{label:'Sueño',cat:'sueno',icon:'moon',bub:'cat-sueno'},
+ despertar:{label:'Despertar nocturno',cat:'sueno',icon:'sun',bub:'cat-desp'},
+ despertar_def:{label:'Despertar definitivo',cat:'sueno',icon:'sunrise',bub:'cat-desp'},
+ pecho:{label:'Pecho',cat:'alim',icon:'drop',bub:'cat-alim'},
+ biberon:{label:'Biberón',cat:'alim',icon:'bottle',bub:'cat-alim'},
+ comida:{label:'Comida',cat:'alim',icon:'bowl',bub:'cat-alim'},
+ panal:{label:'Pañal',cat:'panal',icon:'diaper',bub:'cat-panal'},
+ evento:{label:'Acontecimiento',cat:'evento',icon:'star',bub:'cat-evento'}
+};
+const SIDES={izq:'Izquierdo',der:'Derecho',ambos:'Ambos'};
+const DIAPER={pis:'Pis',caca:'Caca',ambos:'Pis y caca'};
+const MILK={materna:'Leche materna',formula:'Fórmula'};
+const ECATS={vacuna:'Vacuna',medico:'Médico',hito:'Hito',medicacion:'Medicación',temperatura:'Temperatura',otro:'Otro'};
+
+/* ---------- Tiempo ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const fmtTime=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+function fmtDur(ms){ms=Math.max(0,ms);const m=Math.round(ms/MIN);if(m<1)return'menos de 1 min';const h=Math.floor(m/60),r=m%60;return h?(r?`${h} h ${r} min`:`${h} h`):`${r} min`}
+function fmtClock(ms){const s=Math.max(0,Math.floor(ms/1000));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h+':'+pad(m)+':'+pad(x)}
+const fmtH=ms=>(ms/H).toLocaleString('es-ES',{maximumFractionDigits:1})+' h';
+const midnight=t=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()};
+const addDays=(t,n)=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n).getTime()};
+const atHM=(day,hm)=>{const d=new Date(day);const[h,m]=hm.split(':').map(Number);return new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m).getTime()};
+const toLocalInput=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+function fromLocalInput(v){const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v||'');if(!m)return null;return new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]).getTime()}
+const toDateInput=t=>{const d=new Date(t);return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+function fromDateInput(v){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||'');return m?new Date(+m[1],m[2]-1,+m[3]).getTime():null}
+const DF=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'});
+const DS=new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short'});
+function dayLabel(day){const t=midnight(Date.now());const s=DF.format(day);if(day===t)return'Hoy · '+s;if(day===addDays(t,-1))return'Ayer · '+s;return s.charAt(0).toUpperCase()+s.slice(1)}
+const ov=(s,e,a,b)=>Math.max(0,Math.min(e,b)-Math.max(s,a));
+const evEnd=e=>e.end==null?Date.now():e.end;
+
+/* ---------- Estado y almacenamiento ---------- */
+let S=null;
+const ui={view:'inicio',dirty:false,day:midnight(Date.now()),mode:'24h',tl:'ambos',log:'todo',zoom:false,period:7,open:null,sel:{},pendingImport:null};
+const defaultProfile=()=>({id:'profile',name:'',birth:'',nightStart:'19:00',nightEnd:'09:00',updated:0});
+function blank(){return{v:2,profile:defaultProfile(),events:[],notes:[],rev:-1,outbox:[]}}
+const DBN='diario-bebe',ST='kv',LSK='diario-bebe-v2';
+/* Ajustes de este móvil: código, nombre, tema y si ya vio el paseo */
+const DK='diario-bebe-dispositivo';
+const D={code:'',me:'',theme:'auto',tourSeen:false};
+try{Object.assign(D,JSON.parse(localStorage.getItem(DK)||'{}'))}catch(e){}
+function saveD(){try{localStorage.setItem(DK,JSON.stringify(D))}catch(e){}}
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function load(){
+  try{const db=await idb();const v=await new Promise((res,rej)=>{const q=db.transaction(ST).objectStore(ST).get('state2');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});if(v&&v.events)return v}catch(e){}
+  try{const s=localStorage.getItem(LSK);if(s){const v=JSON.parse(s);if(v&&v.events)return v}}catch(e){}
+  return null;
+}
+let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(flush,250)}
+async function flush(){clearTimeout(saveT);saveT=null;const snap=JSON.parse(JSON.stringify(S));
+  try{localStorage.setItem(LSK,JSON.stringify(snap))}catch(e){}
+  try{const db=await idb();await new Promise((res,rej)=>{const t=db.transaction(ST,'readwrite');t.objectStore(ST).put(snap,'state2');t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveT)flush()});
+window.addEventListener('pagehide',()=>{if(saveT)flush()});
+const uid=()=>'ev_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+
+/* ---------- Cálculos ---------- */
+const nightMin=hm=>{const[h,m]=hm.split(':').map(Number);return h*60+m};
+function isNight(t){const d=new Date(t),m=d.getHours()*60+d.getMinutes(),a=nightMin(S.profile.nightStart),b=nightMin(S.profile.nightEnd);return a>b?(m>=a||m<b):(m>=a&&m<b)}
+function nightWindow(day){const a=nightMin(S.profile.nightStart),b=nightMin(S.profile.nightEnd);
+  return a>b?[atHM(addDays(day,-1),S.profile.nightStart),atHM(day,S.profile.nightEnd)]:[atHM(day,S.profile.nightStart),atHM(day,S.profile.nightEnd)]}
+const running=()=>S.events.filter(e=>e.end==null&&(e.type==='sueno'||e.type==='despertar'||e.type==='pecho')).sort((a,b)=>a.start-b.start);
+function nightStats(def){const b=def.start;
+  const sl=S.events.filter(e=>e.type==='sueno'&&e.sub==='noche'&&e.start<b&&evEnd(e)<=b+MIN&&evEnd(e)>b-16*H).sort((x,y)=>evEnd(y)-evEnd(x));
+  let cur=b,used=[];for(const e of sl){if(evEnd(e)>=cur-3*H&&e.start<cur){used.push(e);cur=Math.min(cur,e.start)}else if(evEnd(e)<cur-3*H)break}
+  if(!used.length)return null;const slept=used.reduce((s,e)=>s+ov(e.start,evEnd(e),cur,b),0);return{slept,inBed:b-cur}}
+function rangeStats(a,b){
+  let night=0,nap=0,awake=0,wakes=0,feeds=0,ml=0,diapers=0;
+  for(const e of S.events){const en=evEnd(e);
+    if(e.type==='sueno'){const o=ov(e.start,en,a,b);if(e.sub==='noche')night+=o;else nap+=o}
+    else if(e.type==='despertar'){if(e.start>=a&&e.start<b){wakes++;awake+=ov(e.start,en,a,b)}}
+    else if(TYPES[e.type].cat==='alim'){if(e.start>=a&&e.start<b){feeds++;if(e.type==='biberon')ml+=+e.qty||0}}
+    else if(e.type==='panal'){if(e.start>=a&&e.start<b)diapers++}
+  }
+  return{night,nap,sleep:night+nap,awake,wakes,feeds,ml,diapers};
+}
+function evTitle(e){if(e.type==='sueno')return e.sub==='noche'?'Sueño nocturno':'Siesta';if(e.type==='evento')return ECATS[e.sub]||'Acontecimiento';return TYPES[e.type].label}
+function evDetail(e){
+  const run=e.end==null;
+  switch(e.type){
+    case'sueno':return run?`Durmiendo desde las ${fmtTime(e.start)}`:`${fmtTime(e.start)} – ${fmtTime(e.end)} · ${fmtDur(e.end-e.start)}`;
+    case'despertar':return run?'Despierto ahora':`despierto ${fmtDur(e.end-e.start)}`;
+    case'despertar_def':{const s=nightStats(e);return s?`${fmtDur(s.slept)} dormidos · ${fmtDur(s.inBed)} en cama`:'Fin de la noche'}
+    case'pecho':return SIDES[e.sub]+(run?' · en curso':(e.end>e.start?' · '+fmtDur(e.end-e.start):''));
+    case'biberon':return`${e.qty} ml · ${MILK[e.sub]||''}`;
+    case'comida':return e.note||'';
+    case'panal':return DIAPER[e.sub]+(e.note?' · '+e.note:'');
+    case'evento':return e.note||'';
+  }return''}
+function ageText(){const b=fromDateInput(S.profile.birth);if(!b)return'';const days=Math.floor((midnight(Date.now())-b)/DAY);if(days<0)return'';
+  if(days<91){const w=Math.floor(days/7),d=days%7;return w?`${w} ${w===1?'semana':'semanas'}${d?` y ${d} ${d===1?'día':'días'}`:''}`:`${days} ${days===1?'día':'días'}`}
+  const bd=new Date(b),nd=new Date();let m=(nd.getFullYear()-bd.getFullYear())*12+nd.getMonth()-bd.getMonth();if(nd.getDate()<bd.getDate())m--;return`${m} meses`}
+
+/* ---------- Mutaciones ---------- */
+function queue(k,item){const c=JSON.parse(JSON.stringify(item));S.outbox=S.outbox.filter(o=>!(o.k===k&&o.item.id===c.id));S.outbox.push({k,item:c});save();syncSoon()}
+function addEv(o){const t=Date.now();const e=Object.assign({id:uid(),created:t,updated:t,by:D.me},o);S.events.push(e);queue('ev',e);return e}
+function upd(e,o){Object.assign(e,o,{updated:Date.now()});queue('ev',e)}
+function delEv(id){S.events=S.events.filter(e=>e.id!==id);queue('ev',{id,deleted:true,updated:Date.now()})}
+function setProfile(k,v){S.profile[k]=v;S.profile.updated=Date.now();queue('profile',S.profile)}
+
+/* ---------- Sincronización ---------- */
+const API='/api/sync',BATCH=400;
+const sy={state:'idle',last:0,busy:false,again:false,fail:0,timer:null,soon:null};
+function syncSoon(ms=400){clearTimeout(sy.soon);sy.soon=setTimeout(sync,ms)}
+async function sync(){
+  if(!D.code)return;
+  if(sy.busy){sy.again=true;return}
+  sy.busy=true;const ops=S.outbox.slice(0,BATCH);
+  try{
+    const r=await fetch(API+'?since='+S.rev,{method:ops.length?'POST':'GET',cache:'no-store',
+      headers:{'x-code':D.code,'content-type':'application/json'},body:ops.length?JSON.stringify({ops}):undefined});
+    if(r.status===401){sy.state='auth';throw new Error('auth')}
+    if(!r.ok)throw new Error('http '+r.status);
+    const d=await r.json();
+    if(ops.length)S.outbox=S.outbox.filter(o=>!ops.includes(o));
+    const changed=applyRemote(d);
+    sy.state='ok';sy.last=Date.now();sy.fail=0;save();
+    if(changed)refresh();
+    if(S.outbox.length)sy.again=true;
+  }catch(e){if(sy.state!=='auth')sy.state=navigator.onLine===false?'offline':'error';sy.fail++}
+  sy.busy=false;renderSync();
+  if(sy.again&&sy.state==='ok'){sy.again=false;syncSoon(50)}else sy.again=false;
+}
+function pendingItem(k,id){const o=S.outbox.find(o=>o.k===k&&o.item.id===id);return o?o.item:null}
+function mergeInto(list,k,it){
+  const mine=pendingItem(k,it.id);if(mine&&mine.updated>it.updated)return false;
+  const c={...it};delete c._rev;const i=list.findIndex(x=>x.id===c.id);
+  if(c.deleted){if(i>=0){list.splice(i,1);return true}return false}
+  if(i>=0){if(list[i].updated===c.updated)return false;list[i]=c;return true}
+  list.push(c);return true;
+}
+function applyRemote(d){
+  let ch=false;
+  if(d.full){
+    const keep=(list,k,arr)=>{const ids=new Set(arr.map(x=>x.id));const n=list.length;const out=list.filter(x=>ids.has(x.id)||pendingItem(k,x.id));if(out.length!==n)ch=true;return out};
+    S.events=keep(S.events,'ev',d.events);S.notes=keep(S.notes,'note',d.notes);
+  }
+  for(const it of d.events||[])ch=mergeInto(S.events,'ev',it)||ch;
+  for(const it of d.notes||[])ch=mergeInto(S.notes,'note',it)||ch;
+  if(d.profile){const mine=pendingItem('profile','profile');if(!mine||mine.updated<=d.profile.updated){const p=Object.assign(defaultProfile(),d.profile);delete p._rev;
+    if(JSON.stringify(p)!==JSON.stringify(S.profile)){S.profile=p;ch=true}}}
+  if(typeof d.rev==='number')S.rev=d.rev;
+  return ch;
+}
+function busyEditing(){const a=document.activeElement;return a&&a.closest&&a.closest('#view')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function refresh(){if(!D.code)return;if(tour||!$('#sheet').hidden||busyEditing()){ui.dirty=true;renderLive();return}ui.dirty=false;render()}
+function loop(){clearTimeout(sy.timer);if(!D.code)return;
+  const wait=document.visibilityState!=='visible'?60000:sy.fail?Math.min(60000,4000*2**Math.min(sy.fail,4)):8000;
+  sy.timer=setTimeout(async()=>{if(document.visibilityState==='visible')await sync();loop()},wait)}
+function agoText(t){const s=Math.round((Date.now()-t)/1000);return s<10?'ahora mismo':s<60?`hace ${s} s`:`hace ${fmtDur(Date.now()-t)}`}
+function syncPill(){
+  const n=S.outbox.length;
+  if(sy.state==='auth')return`<div class="syncpill bad"><span class="dot"></span>El código de acceso ya no es válido.<button data-act="logout-now">Volver a entrar</button></div>`;
+  if((sy.state==='offline'||sy.state==='error')&&n)return`<div class="syncpill"><span class="dot"></span>Sin conexión · ${n} ${n===1?'cambio':'cambios'} por enviar</div>`;
+  if(sy.state==='offline'||sy.state==='error')return`<div class="syncpill"><span class="dot"></span>Sin conexión · lo del otro móvil llegará al volver la cobertura</div>`;
+  return'';
+}
+function syncLine(){const n=S.outbox.length;
+  if(sy.state==='auth')return'El código ya no es válido.';
+  if(sy.state==='ok')return`Al día · ${agoText(sy.last)}${n?` · ${n} por enviar`:''}`;
+  if(sy.state==='idle'||sy.busy)return'Sincronizando…';
+  return`Sin conexión${n?` · ${n} ${n===1?'cambio':'cambios'} por enviar`:''}`}
+function renderSync(){const b=$('#syncbox');if(b)b.innerHTML=syncPill();const l=$('#syncline');if(l)l.textContent=syncLine()}
+async function doLogin(me,code){
+  const r=await fetch(API+'?since=-1',{headers:{'x-code':code},cache:'no-store'});
+  if(r.status===401)throw new Error('Ese código no es correcto.');
+  if(r.status===500){let m='';try{m=(await r.json()).message}catch(e){}throw new Error(m||'El servidor no está configurado.')}
+  if(!r.ok)throw new Error('No se pudo conectar ('+r.status+'). Prueba otra vez.');
+  const d=await r.json();
+  D.me=me;D.code=code;saveD();S=blank();applyRemote(d);sy.state='ok';sy.last=Date.now();await flush();
+}
+function logout(){D.code='';saveD();S=blank();flush();clearTimeout(sy.timer);sy.state='idle';ui.view='inicio';try{history.replaceState(null,'','#inicio')}catch(e){}render()}
+function startSleep(){if(running().some(e=>e.type==='sueno'))return toast('Ya hay un sueño en curso');
+  const now=Date.now();running().filter(e=>e.type==='despertar').forEach(e=>upd(e,{end:now}));
+  addEv({type:'sueno',sub:isNight(now)?'noche':'siesta',start:now,end:null});ui.open=null;toast(isNight(now)?'Noche en marcha':'Siesta en marcha');render()}
+function startBreast(side){const now=Date.now();const cur=running().find(e=>e.type==='pecho');if(cur){if(cur.sub===side)return toast('Ya está en marcha');upd(cur,{end:now})}
+  addEv({type:'pecho',sub:side,start:now,end:null});toast('Pecho '+SIDES[side].toLowerCase()+' en marcha');render()}
+function finalWake(at){at=at||Date.now();running().forEach(e=>{if(e.type!=='pecho')upd(e,{end:at})});addEv({type:'despertar_def',start:at,end:at});ui.open=null;toast('Buenos días');render()}
+
+/* ---------- Render: banner ---------- */
+function liveTitle(e){if(e.type==='sueno')return e.sub==='noche'?'Noche en curso':'Siesta en curso';if(e.type==='despertar')return'Despierto por la noche';return'Pecho '+SIDES[e.sub].toLowerCase()}
+function renderLive(){
+  const r=running();const el=$('#live');
+  if(!r.length){el.innerHTML='';return}
+  el.innerHTML=r.map(e=>{const open=ui.open===e.id;let acts='';
+    if(e.type==='sueno'&&e.sub==='noche')acts=`<button data-act="wake-short" data-id="${e.id}">Se despierta un rato</button><button class="pri" data-act="wake-final">Despertar definitivo</button>`;
+    else if(e.type==='sueno')acts=`<button class="pri" data-act="stop" data-id="${e.id}">Se ha despertado</button>`;
+    else if(e.type==='despertar')acts=`<button class="pri" data-act="back-sleep" data-id="${e.id}">Vuelve a dormir</button><button data-act="wake-final">Despertar definitivo</button>`;
+    else acts=`<button data-act="switch-side" data-id="${e.id}">Cambiar a ${e.sub==='izq'?'derecho':'izquierdo'}</button><button class="pri" data-act="stop" data-id="${e.id}">Terminar</button>`;
+    acts+=`<button data-act="edit" data-id="${e.id}">Editar</button>`;
+    return`<div class="lv ${e.type==='pecho'?'feed':''} ${open?'open':''}"><button class="lv-head" data-act="toggle-live" data-id="${e.id}" aria-expanded="${open}">${ic(TYPES[e.type].icon)}<span class="t">${liveTitle(e)}${e.by&&e.by!==D.me?` · ${esc(e.by)}`:''}</span><span class="clock" data-clock="${e.start}">${fmtClock(Date.now()-e.start)}</span><span class="chev">${ic('down')}</span></button>${open?`<div class="lv-acts">${acts}</div>`:''}</div>`}).join('');
+}
+function tickClocks(){document.querySelectorAll('[data-clock]').forEach(n=>{n.textContent=fmtClock(Date.now()-+n.dataset.clock)})}
+
+/* ---------- Render: vistas ---------- */
+function vInicio(){
+  const now=Date.now(),t0=midnight(now),st=rangeStats(t0,now);
+  const feeds=S.events.filter(e=>TYPES[e.type].cat==='alim'&&e.start<=now).sort((a,b)=>b.start-a.start);
+  const lf=feeds[0],lb=S.events.filter(e=>e.type==='pecho').sort((a,b)=>b.start-a.start)[0];
+  let feedBox='<b>Sin tomas</b><span>Aún no hay registros</span>';
+  if(lf){const ago=lf.end==null?'Ahora':'Hace '+fmtDur(now-(lf.end>lf.start?lf.end:lf.start));
+    feedBox=`<b>${ago}</b><span>${evTitle(lf)}${lf.type==='pecho'?' '+SIDES[lf.sub].toLowerCase():lf.type==='biberon'?' · '+lf.qty+' ml':''}${lf.by?' · '+esc(lf.by):''}</span>`;
+    if(lb&&lb.sub!=='ambos'&&lb.end!=null)feedBox+=`<span class="hint">Toca el ${lb.sub==='izq'?'derecho':'izquierdo'}</span>`}
+  const sl=S.events.filter(e=>e.type==='sueno').sort((a,b)=>b.start-a.start)[0];
+  let sleepBox='<b>Sin datos</b><span>Registra el primer sueño</span>';
+  if(sl){if(sl.end==null)sleepBox=`<b>Durmiendo</b><span>${fmtDur(now-sl.start)} · desde las ${fmtTime(sl.start)}</span>`;
+    else sleepBox=`<b>Despierto</b><span>${fmtDur(now-sl.end)} · desde las ${fmtTime(sl.end)}</span>`}
+  const remind='';
+  const name=S.profile.name||'Tu bebé',age=ageText();
+  return`<header class="vh"><div><p class="eyebrow">${esc(DF.format(now))}</p><h1>${esc(name)}</h1>${age?`<p class="sub">${age}</p>`:''}</div><button class="help-btn" data-act="tour">${ic('help')}Cómo funciona</button></header>
+  <div id="syncbox">${syncPill()}</div>
+  <section class="now"><div class="card stat"><span class="k">Última toma</span>${feedBox}</div><div class="card stat"><span class="k">Sueño</span>${sleepBox}</div></section>
+  <h2>Registro rápido</h2>
+  <div class="quick">
+   <button class="qb" data-act="breast" data-side="izq"><span class="bub cat-alim">${ic('drop')}</span>Pecho izq.</button>
+   <button class="qb" data-act="breast" data-side="der"><span class="bub cat-alim">${ic('drop')}</span>Pecho der.</button>
+   <button class="qb" data-act="form" data-type="biberon"><span class="bub cat-alim">${ic('bottle')}</span>Biberón</button>
+   <button class="qb" data-act="form" data-type="panal"><span class="bub cat-panal">${ic('diaper')}</span>Pañal</button>
+   <button class="qb" data-act="sleep"><span class="bub cat-sueno">${ic('moon')}</span>Dormir</button>
+   <button class="qb" data-act="wake-final"><span class="bub cat-desp">${ic('sunrise')}</span>Despertar definitivo</button>
+  </div>
+  <h2>Hoy</h2>
+  <div class="totals"><div class="tot"><b>${fmtH(st.sleep)}</b><span>Sueño</span></div><div class="tot"><b>${st.feeds}</b><span>Tomas</span></div><div class="tot"><b>${st.ml}</b><span>ml biberón</span></div><div class="tot"><b>${st.diapers}</b><span>Pañales</span></div></div>
+  ${remind}`;
+}
+function timeline(a,b){
+  const span=b-a,pct=t=>((t-a)/span*100).toFixed(3);
+  let segs='',icons='';
+  for(const e of S.events){if(e.type!=='sueno'&&e.type!=='despertar')continue;const s=Math.max(e.start,a),en=Math.min(evEnd(e),b);if(en<=s)continue;
+    const c=e.type==='despertar'?'desp':e.sub;segs+=`<i class="s-${c}${e.end==null?' on':''}" style="left:${pct(s)}%;width:${Math.max((en-s)/span*100,.5).toFixed(3)}%"></i>`}
+  const fe=S.events.filter(e=>TYPES[e.type].cat==='alim'&&e.start>=a&&e.start<b).sort((x,y)=>x.start-y.start);
+  const cl=[];for(const e of fe){const l=cl[cl.length-1];if(l&&e.start-l.t<30*MIN&&!ui.zoom)l.n.push(e);else cl.push({t:e.start,n:[e]})}
+  icons=cl.map(c=>`<span class="fd" style="left:${pct(c.t)}%" title="${fmtTime(c.t)}">${ic(TYPES[c.n[0].type].icon)}${c.n.length>1?`<em>${c.n.length}</em>`:''}</span>`).join('');
+  let ticks=[];
+  if(ui.mode==='24h'){const d=new Date(a);ticks=[0,6,12,18,24].map(h=>({t:new Date(d.getFullYear(),d.getMonth(),d.getDate(),h).getTime(),l:pad(h)+':00'}))}
+  else{const st=Math.ceil(a/H)*H;for(let t=st;t<b-H;t+=3*H)ticks.push({t,l:fmtTime(t)});ticks.unshift({t:a,l:fmtTime(a)});ticks=ticks.filter((x,i,arr)=>i===0||x.t-arr[i-1].t>=H);ticks.push({t:b,l:fmtTime(b)})}
+  if(ui.zoom&&ui.mode==='24h'){const d=new Date(a);ticks=[];for(let h=0;h<=24;h+=2)ticks.push({t:new Date(d.getFullYear(),d.getMonth(),d.getDate(),h).getTime(),l:pad(h)+':00'})}
+  const grid=ticks.slice(1,-1).map(x=>`<span class="grid-l" style="left:${pct(x.t)}%"></span>`).join('');
+  const now=Date.now(),nowL=now>=a&&now<b?`<span class="now-l" style="left:${pct(now)}%"></span>`:'';
+  const showS=ui.tl!=='alim',showF=ui.tl!=='sueno';
+  return`<div class="tl-wrap" id="tlwrap"><div class="tl ${ui.zoom?'zoom':''}">
+   ${showS?`<span class="lab">Sueño</span><div class="track">${segs}${nowL}</div>`:''}
+   ${showF?`<span class="lab" style="display:block">Tomas</span><div class="feeds">${grid}${icons}${nowL}</div>`:''}
+   <div class="axis">${ticks.map(x=>`<span style="left:${pct(x.t)}%">${x.l}</span>`).join('')}</div></div></div>`;
+}
+function vDiario(){
+  const day=ui.day,today=midnight(Date.now());
+  const[a,b]=ui.mode==='24h'?[day,addDays(day,1)]:nightWindow(day);
+  const r=running().find(e=>e.type==='sueno'),aw=running().find(e=>e.type==='despertar');
+  let status='';
+  if(day===today){if(r)status=`${r.sub==='noche'?'Noche':'Siesta'} en curso · desde las ${fmtTime(r.start)}`;else if(aw)status=`Despierto desde las ${fmtTime(aw.start)}`;
+    else{const l=S.events.filter(e=>e.type==='sueno'&&e.end!=null).sort((x,y)=>y.end-x.end)[0];status=l?`Despierto desde las ${fmtTime(l.end)}`:''}}
+  else status=ui.mode==='noche'?`Noche del ${DS.format(addDays(day,-1))} al ${DS.format(day)}`:'';
+  const st=rangeStats(a,Math.min(b,Date.now()));
+  const sum=[`${st.wakes} ${st.wakes===1?'despertar':'despertares'}`,`${fmtDur(st.awake)} despierto`,`noche ${fmtDur(st.night)}`];
+  if(ui.mode==='24h')sum.push(`siestas ${fmtDur(st.nap)}`);sum.push(`${st.feeds} ${st.feeds===1?'toma':'tomas'}`);
+  const LF={todo:null,sueno:'sueno',alim:'alim',panal:'panal',evento:'evento'};
+  const items=S.events.filter(e=>e.start>=a&&e.start<b&&(!LF[ui.log]||TYPES[e.type].cat===LF[ui.log])).sort((x,y)=>x.start-y.start);
+  const list=items.length?`<ul class="log">${items.map(e=>`<li><button data-act="edit" data-id="${e.id}"><span class="tm">${fmtTime(e.start)}</span><span class="bub ${TYPES[e.type].bub}">${ic(TYPES[e.type].icon)}</span><span class="tx"><b>${esc(evTitle(e))}</b><span>${esc(evDetail(e))}</span>${e.by?`<span class="by">${esc(e.by)}</span>`:''}</span></button></li>`).join('')}</ul>`:`<p class="empty">No hay registros ${ui.log==='todo'?'':'de este tipo '}en este periodo. Pulsa + para añadir uno.</p>`;
+  const chip=(k,v,l)=>`<button class="chip" data-act="${k}" data-v="${v}" aria-pressed="${ui[k==='tlf'?'tl':'log']===v}">${l}</button>`;
+  return`<header class="vh"><h1>Descanso y tomas</h1><button class="icon-btn" data-act="zoom" aria-pressed="${ui.zoom}" aria-label="Ampliar gráfico">${ic('zoom')}</button></header>
+  <div class="daynav"><button class="icon-btn" data-act="day" data-d="-1" aria-label="Día anterior">${ic('left')}</button><label class="dl">${esc(dayLabel(day))}<input type="date" id="daypick" value="${toDateInput(day)}" max="${toDateInput(today)}" aria-label="Elegir día"></label><button class="icon-btn" data-act="day" data-d="1" aria-label="Día siguiente" ${day>=today?'disabled':''}>${ic('right')}</button></div>
+  <div class="seg big" role="radiogroup" aria-label="Vista"><label><input type="radio" name="mode" value="noche" ${ui.mode==='noche'?'checked':''}><span>${ic('moon')}Noche</span></label><label><input type="radio" name="mode" value="24h" ${ui.mode==='24h'?'checked':''}><span>24 horas</span></label></div>
+  ${status?`<p class="status">${esc(status)}</p>`:''}
+  <div class="chips" style="margin-top:12px">${chip('tlf','sueno','Sueño')}${chip('tlf','alim','Alimentación')}${chip('tlf','ambos','Ambos')}</div>
+  ${timeline(a,b)}
+  <div class="legend"><span><i class="s-noche"></i>Noche</span><span><i class="s-siesta"></i>Siesta</span><span><i class="s-desp"></i>Despertar</span><span><i style="background:var(--c-none)"></i>Sin información</span><span>${ic('drop')}Pecho</span><span>${ic('bottle')}Biberón</span><span>${ic('bowl')}Comida</span></div>
+  <p class="summary tnum">${sum.join(' · ')}</p><p class="tz" style="margin:4px 0 0">Hora local · ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone||'')}</p>
+  <h2>Registros del día</h2>
+  <div class="chips">${chip('logf','todo','Todo')}${chip('logf','sueno','Sueño')}${chip('logf','alim','Alimentación')}${chip('logf','panal','Pañales')}${chip('logf','evento','Acontecimientos')}</div>
+  ${list}`;
+}
+function bars(id,days,series,fmt,unitMax){
+  const W=340,Hh=150,L=30,R=6,T=8,B=22,pw=W-L-R,ph=Hh-T-B,n=days.length;
+  const tot=days.map((_,i)=>series.reduce((s,x)=>s+x.vals[i],0));
+  let mx=Math.max(unitMax||1,...tot);const step=[1,2,4,5,10,20,25,50,100].find(s=>mx/s<=4)||Math.ceil(mx/4);mx=Math.ceil(mx/step)*step;
+  const y=v=>T+ph-v/mx*ph,bw=Math.max(3,Math.min(18,pw/n*.6)),cx=i=>L+pw/n*(i+.5);
+  let g='';for(let v=0;v<=mx;v+=step)g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3.5}" text-anchor="end">${v}</text>`;
+  const sel=ui.sel[id]??n-1;let m='';
+  days.forEach((d,i)=>{let base=0;const x=cx(i)-bw/2;
+    if(i===sel)m+=`<rect class="sel" x="${cx(i)-pw/n/2}" y="${T}" width="${pw/n}" height="${ph}" rx="4"/>`;
+    series.forEach((s,k)=>{const v=s.vals[i];if(v<=0)return;const top=k===series.length-1||series.slice(k+1).every(z=>z.vals[i]<=0);
+      const y0=y(base),y1=y(base+v)+(base>0?2:0),h=Math.max(0,y0-y1);if(h<=0){base+=v;return}
+      const r=top?Math.min(4,bw/2,h):0;
+      m+=`<path fill="${s.color}" d="M${x},${y0} V${y1+r} Q${x},${y1} ${x+r},${y1} H${x+bw-r} Q${x+bw},${y1} ${x+bw},${y1+r} V${y0} Z"/>`;base+=v});
+  });
+  const every=n<=7?1:n<=14?2:5;let xl='';days.forEach((d,i)=>{if((n-1-i)%every===0)xl+=`<text class="ax" x="${cx(i)}" y="${Hh-6}" text-anchor="middle">${new Date(d).getDate()}</text>`});
+  const hits=days.map((d,i)=>`<rect class="hit" data-act="bar" data-c="${id}" data-i="${i}" x="${cx(i)-pw/n/2}" y="0" width="${pw/n}" height="${Hh}"/>`).join('');
+  const d=days[sel],read=`${DS.format(d)} · ${fmt(sel)}`;
+  return{svg:`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Gráfico de barras por día">${g}${m}${xl}${hits}</svg>`,read};
+}
+function vAnalisis(){
+  const n=ui.period,today=midnight(Date.now()),days=[];for(let i=n-1;i>=0;i--)days.push(addDays(today,-i));
+  const per=days.map(d=>rangeStats(d,Math.min(addDays(d,1),Date.now())));
+  const nights=days.map(d=>{const[a,b]=nightWindow(d);return rangeStats(a,Math.min(b,Date.now()))});
+  const full=(arr,f)=>{const v=arr.slice(0,-1).map(f);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0};
+  const prevDays=[];for(let i=2*n-1;i>=n;i--)prevDays.push(addDays(today,-i));
+  const pper=prevDays.map(d=>rangeStats(d,addDays(d,1))),pn=prevDays.map(d=>{const[a,b]=nightWindow(d);return rangeStats(a,b)});
+  const avg=(arr,f)=>arr.length?arr.map(f).reduce((s,x)=>s+x,0)/arr.length:0;
+  const hasPrev=pper.some(s=>s.sleep>0||s.feeds>0);
+  const cmp=(cur,prev,fmtv)=>{if(!hasPrev)return'Sin periodo anterior';const d=cur-prev;if(Math.abs(d)<1e-9)return'Igual que antes';return`${d>0?'+':'−'}${fmtv(Math.abs(d))} vs ${n} días antes`};
+  const sCur=full(per,s=>s.sleep),fCur=full(per,s=>s.feeds),wCur=full(nights,s=>s.wakes),dCur=full(per,s=>s.diapers);
+  const num=v=>v.toLocaleString('es-ES',{maximumFractionDigits:1});
+  const kp=(k,v,c)=>`<div class="kpi"><span class="k">${k}</span><b>${v}</b><span>${c}</span></div>`;
+  const C=getComputedStyle(document.documentElement),col=v=>C.getPropertyValue(v).trim();
+  const c1=bars('sleep',days,[{vals:per.map(s=>s.night/H),color:col('--c-noche')},{vals:per.map(s=>s.nap/H),color:col('--c-siesta')}],i=>`noche ${fmtDur(per[i].night)} · siestas ${fmtDur(per[i].nap)}`,4);
+  const c2=bars('feeds',days,[{vals:per.map(s=>s.feeds),color:col('--c-toma')}],i=>`${per[i].feeds} tomas${per[i].ml?` · ${per[i].ml} ml de biberón`:''}`,4);
+  const c3=bars('wakes',days,[{vals:nights.map(s=>s.wakes),color:col('--c-desp')}],i=>`${nights[i].wakes} despertares · ${fmtDur(nights[i].awake)} despierto`,3);
+  const c4=bars('diap',days,[{vals:per.map(s=>s.diapers),color:col('--c-neutral')}],i=>`${per[i].diapers} pañales`,4);
+  return`<header class="vh"><h1>Análisis</h1></header>
+  <div class="seg" role="radiogroup" aria-label="Periodo" style="margin-bottom:14px">${[7,14,30].map(p=>`<label><input type="radio" name="period" value="${p}" ${ui.period===p?'checked':''}><span>${p} días</span></label>`).join('')}</div>
+  <div class="kpis">${kp('Sueño al día',fmtH(sCur),cmp(sCur,avg(pper,s=>s.sleep),v=>fmtH(v)))}${kp('Tomas al día',num(fCur),cmp(fCur,avg(pper,s=>s.feeds),num))}${kp('Despertares por noche',num(wCur),cmp(wCur,avg(pn,s=>s.wakes),num))}${kp('Pañales al día',num(dCur),cmp(dCur,avg(pper,s=>s.diapers),num))}</div>
+  <p class="foot">Las medias no cuentan el día de hoy porque aún no ha terminado.</p>
+  <div class="chart"><h3>Horas de sueño por día</h3><div class="legend" style="margin:2px 4px 6px"><span><i class="s-noche"></i>Noche</span><span><i class="s-siesta"></i>Siestas</span></div><p class="read">${c1.read}</p>${c1.svg}</div>
+  <div class="chart"><h3>Tomas por día</h3><p class="read">${c2.read}</p>${c2.svg}</div>
+  <div class="chart"><h3>Despertares por noche</h3><p class="read">${c3.read}</p>${c3.svg}</div>
+  <div class="chart"><h3>Pañales por día</h3><p class="read">${c4.read}</p>${c4.svg}</div>
+  <p class="foot">Toca una barra para ver el detalle de ese día. El número bajo cada barra es el día del mes.</p>`;
+}
+function vNotas(){
+  const ns=[...S.notes].sort((a,b)=>b.t-a.t);
+  return`<header class="vh"><h1>Notas</h1></header>
+  <label class="field"><span>Nueva nota</span><textarea class="inp" id="note-new" placeholder="Por ejemplo: preguntar al pediatra por las tomas nocturnas"></textarea></label>
+  <button class="btn pri wide" data-act="add-note">Guardar nota</button>
+  ${ns.length?`<ul class="notes">${ns.map(n=>`<li><time>${esc(DF.format(n.t))} · ${fmtTime(n.t)}${n.by?' · '+esc(n.by):''}</time><p>${esc(n.text)}</p><button data-act="del-note" data-id="${n.id}" data-confirm="Toca otra vez para borrar">Borrar</button></li>`).join('')}</ul>`:'<p class="empty">Aún no hay notas.</p>'}`;
+}
+function vPerfil(){
+  const p=S.profile,standalone=window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+  return`<header class="vh"><h1>Perfil</h1></header>
+  <div class="sect" id="sect-sync"><h3>Compartido entre los dos</h3>
+   <p>Lo que apuntéis en cualquiera de los dos móviles aparece en el otro en unos segundos. En este móvil apuntas como <span class="who">${esc(D.me)}</span>.</p>
+   <p id="syncline" class="tnum" style="margin:0 0 12px">${esc(syncLine())}</p>
+   <label class="field"><span>Tu nombre en este móvil</span><input class="inp" id="p-me" value="${esc(D.me)}" autocomplete="nickname"></label>
+   <button class="btn" data-act="sync-now">Sincronizar ahora</button></div>
+  <div class="sect"><h3>Bebé</h3>
+   <label class="field"><span>Nombre</span><input class="inp" id="p-name" value="${esc(p.name)}" placeholder="Nombre del bebé" autocomplete="off"></label>
+   <label class="field"><span>Fecha de nacimiento</span><input class="inp" type="date" id="p-birth" value="${esc(p.birth)}"></label></div>
+  <div class="sect"><h3>Franja de noche</h3><p>Se usa en la vista «Noche» y para decidir si un sueño es noche o siesta.</p>
+   <div class="two"><label class="field"><span>Empieza</span><input class="inp" type="time" id="p-ns" value="${p.nightStart}"></label><label class="field"><span>Termina</span><input class="inp" type="time" id="p-ne" value="${p.nightEnd}"></label></div></div>
+  <div class="sect"><h3>Tema de este móvil</h3><div class="seg" role="radiogroup" aria-label="Tema">${[['auto','Automático'],['light','Claro'],['dark','Oscuro']].map(([v,l])=>`<label><input type="radio" name="theme" value="${v}" ${D.theme===v?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+  <div class="sect" id="sect-backup"><h3>Copia en archivo</h3>
+   <p>Los datos ya están guardados en el servidor. Si además quieres una copia en un archivo, expórtala aquí. Hay ${S.events.length} registros y ${S.notes.length} ${S.notes.length===1?'nota':'notas'}.</p>
+   <div class="btns"><button class="btn" data-act="export">Exportar copia</button><button class="btn" data-act="copy">Copiar datos</button></div>
+   <p style="margin-top:14px">Para añadir los datos de una copia, elige el archivo:</p>
+   <input type="file" id="imp-file" accept="application/json,.json" class="inp">
+   <details style="margin-top:8px"><summary>O pega el texto de una copia</summary><textarea class="inp" id="imp-text" placeholder='{"app":"diario-bebe", …}'></textarea><button class="btn" style="margin-top:8px" data-act="imp-text">Leer texto</button></details>
+   <div id="imp-box">${impBox()}</div></div>
+  <div class="sect"><h3>Instalar en el iPhone</h3>${standalone?`<p><span class="okchip">Instalada</span> La estás usando desde la pantalla de inicio.</p>`:`<ol><li>Abre esta página en Safari.</li><li>Toca Compartir y elige «Añadir a pantalla de inicio».</li><li>Ábrela siempre desde el icono.</li></ol>`}</div>
+  <div class="sect"><h3>Ayuda</h3><p>Un recorrido de 2 minutos por la app, con ejemplos de lo que puedes hacer y lo que no.</p><button class="btn pri" data-act="tour">Ver el paseo virtual</button></div>
+  <div class="sect"><h3>Salir de este móvil</h3><p>Quita el código y la copia local de este móvil. Los datos siguen en el servidor y en el otro móvil.</p><button class="btn dan" data-act="logout" data-confirm="Toca otra vez para salir">Salir</button></div>
+  <p class="ver">Diario del bebé ${VERSION} · Solo lo ve quien tiene el código.</p>`;
+}
+function vLogin(){
+  return`<header class="vh"><div><p class="eyebrow">Diario del bebé</p><h1>Entrar</h1><p class="login-lead">Usad los dos el mismo código de acceso. Cada uno pone su nombre para saber quién apuntó cada cosa.</p></div></header>
+  <form id="login" class="sect" novalidate>
+   <label class="field"><span>Tu nombre</span><input class="inp" id="l-me" autocomplete="nickname" placeholder="Por ejemplo: Mamá" value="${esc(D.me)}"></label>
+   <label class="field"><span>Código de acceso</span><input class="inp" id="l-code" type="password" autocomplete="current-password" placeholder="El código compartido"></label>
+   <p class="err" id="l-err"></p>
+   <button class="btn pri wide" type="submit" id="l-go">Entrar</button>
+  </form>
+  <p class="foot">La primera vez necesitas internet. Después, si te quedas sin cobertura, lo que apuntes se envía al volver la conexión.</p>`;
+}
+function impBox(){const p=ui.pendingImport;if(!p)return'';if(p.error)return`<p class="err" style="margin-top:12px">${esc(p.error)}</p>`;
+  return`<div class="card" style="margin-top:12px;background:var(--surface-2)"><p style="margin:0 0 10px">La copia tiene <b>${p.events.length}</b> registros y <b>${p.notes.length}</b> notas.</p><div class="btns"><button class="btn pri" data-act="imp-merge">Añadir a lo que hay</button></div></div>`}
+
+/* ---------- Hoja de registro ---------- */
+function openSheet(html){$('#panel').innerHTML=`<div class="grab"></div>`+html;$('#sheet').hidden=false;document.body.style.overflow='hidden'}
+function closeSheet(){const was=!$('#sheet').hidden;$('#sheet').hidden=true;$('#panel').innerHTML='';document.body.style.overflow='';if(was&&ui.dirty&&!tour){ui.dirty=false;render()}}
+function pickType(){openSheet(`<div class="panel-h"><h2>Añadir registro</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic('close')}</button></div>
+  <div class="types">${Object.entries(TYPES).map(([k,t])=>`<button data-act="form" data-type="${k}"><span class="bub ${t.bub}">${ic(t.icon)}</span>${t.label}</button>`).join('')}</div>`)}
+const segH=(name,opts,val)=>`<div class="seg" role="radiogroup">${Object.entries(opts).map(([v,l])=>`<label><input type="radio" name="${name}" value="${v}" ${val===v?'checked':''}><span>${l}</span></label>`).join('')}</div>`;
+let editing=null,formType=null;
+function openForm(type,e){
+  editing=e||null;formType=type;const now=Date.now(),t=TYPES[type],isNew=!e;
+  const st=toLocalInput(e?e.start:now);
+  let f='';const dt=(id,l,v)=>`<label class="field"><span>${l}</span><input class="inp" type="datetime-local" id="${id}" value="${v}"></label>`;
+  switch(type){
+    case'sueno':f=`<div class="field"><span>Tipo</span>${segH('sub',{siesta:'Siesta',noche:'Noche'},e?e.sub:(isNight(now)?'noche':'siesta'))}</div>${dt('f-start','Se duerme',st)}${dt('f-end','Se despierta (vacío si sigue dormido)',e&&e.end!=null?toLocalInput(e.end):'')}`;break;
+    case'despertar':f=`${dt('f-start','Se despierta',st)}<label class="field"><span>Minutos despierto (vacío si sigue despierto)</span><input class="inp" type="number" inputmode="numeric" min="0" id="f-min" value="${e&&e.end!=null?Math.round((e.end-e.start)/MIN):''}"></label>`;break;
+    case'despertar_def':f=`${dt('f-start','Hora del despertar',st)}<p class="sub" style="margin:-4px 0 14px;font-size:14px">Cierra la noche y termina el sueño o despertar que siga en curso.</p>`;break;
+    case'pecho':f=`<div class="field"><span>Lado</span>${segH('sub',SIDES,e?e.sub:'izq')}</div>${dt('f-start','Empieza',st)}<label class="field"><span>Duración en minutos (opcional)</span><input class="inp" type="number" inputmode="numeric" min="0" id="f-min" value="${e&&e.end!=null&&e.end>e.start?Math.round((e.end-e.start)/MIN):''}"></label>`;break;
+    case'biberon':f=`${dt('f-start','Hora',st)}<label class="field"><span>Cantidad (ml)</span><input class="inp" type="number" inputmode="numeric" min="1" id="f-qty" value="${e?e.qty:''}"><div class="amounts">${[60,90,120,150,180].map(v=>`<button type="button" data-act="amt" data-v="${v}">${v} ml</button>`).join('')}</div></label><div class="field"><span>Tipo de leche</span>${segH('sub',MILK,e?e.sub:'materna')}</div>`;break;
+    case'comida':f=`${dt('f-start','Hora',st)}<label class="field"><span>Qué ha comido</span><input class="inp" id="f-note" value="${esc(e?e.note:'')}" placeholder="Por ejemplo: puré de calabaza"></label>`;break;
+    case'panal':f=`${dt('f-start','Hora',st)}<div class="field"><span>Contenido</span>${segH('sub',DIAPER,e?e.sub:'pis')}</div><label class="field"><span>Nota (opcional)</span><input class="inp" id="f-note" value="${esc(e?e.note||'':'')}"></label>`;break;
+    case'evento':f=`${dt('f-start','Fecha y hora',st)}<div class="field"><span>Categoría</span><select class="inp" id="f-cat">${Object.entries(ECATS).map(([v,l])=>`<option value="${v}" ${e&&e.sub===v?'selected':''}>${l}</option>`).join('')}</select></div><label class="field"><span>Descripción</span><textarea class="inp" id="f-note" placeholder="Por ejemplo: 37,8 °C por la tarde">${esc(e?e.note:'')}</textarea></label>`;break;
+  }
+  const timer=['sueno','despertar','pecho'].includes(type)&&isNew;
+  openSheet(`<div class="panel-h"><h2>${isNew?'':'Editar · '}${t.label}</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic('close')}</button></div>
+   <form id="evform" novalidate>${f}<p class="err" id="f-err"></p>
+   <div class="btns">${timer?`<button type="button" class="btn" data-act="timer">Empezar cronómetro</button>`:''}<button type="submit" class="btn pri">${isNew?'Guardar':'Guardar cambios'}</button></div>
+   ${isNew?'':`<div class="btns" style="margin-top:10px"><button type="button" class="btn dan" data-act="del-ev" data-confirm="Toca otra vez para borrar">Borrar registro</button></div>`}</form>`);
+}
+const val=id=>{const n=document.getElementById(id);return n?n.value.trim():''};
+const radio=n=>{const x=document.querySelector(`#evform input[name="${n}"]:checked`);return x?x.value:null};
+function submitForm(timer){
+  const err=m=>{$('#f-err').textContent=m};const type=formType;
+  let start=fromLocalInput(val('f-start'));if(timer)start=Date.now();if(start==null)return err('Indica la hora.');
+  if(start>Date.now()+5*MIN)return err('La hora no puede estar en el futuro.');
+  const o={type,start};
+  if(type==='sueno'){o.sub=radio('sub');const en=val('f-end');o.end=timer||!en?null:fromLocalInput(en);if(o.end!=null&&o.end<=start)return err('La hora de despertar debe ser posterior a la de dormir.');
+    if(o.end==null&&running().some(e=>e.type==='sueno'&&(!editing||e.id!==editing.id)))return err('Ya hay un sueño en curso. Termínalo primero.')}
+  else if(type==='despertar'){const m=val('f-min');o.end=timer||m===''?null:start+Math.max(0,+m)*MIN}
+  else if(type==='despertar_def'){o.end=start}
+  else if(type==='pecho'){o.sub=radio('sub');const m=val('f-min');o.end=timer?null:(m===''?start:start+Math.max(0,+m)*MIN)}
+  else if(type==='biberon'){const q=+val('f-qty');if(!(q>0))return err('Indica la cantidad en ml.');o.qty=Math.round(q);o.sub=radio('sub');o.end=start}
+  else if(type==='comida'){o.note=val('f-note');if(!o.note)return err('Escribe qué ha comido.');o.end=start}
+  else if(type==='panal'){o.sub=radio('sub');o.note=val('f-note');o.end=start}
+  else if(type==='evento'){o.sub=val('f-cat');o.note=val('f-note');if(!o.note)return err('Escribe una descripción.');o.end=start}
+  if(editing){upd(editing,o);toast('Cambios guardados')}
+  else{
+    if(type==='despertar'&&o.end==null)running().filter(e=>e.type==='sueno').forEach(e=>upd(e,{end:start}));
+    if(type==='despertar_def'){running().forEach(e=>{if(e.type!=='pecho'&&e.start<=start)upd(e,{end:start})})}
+    if(type==='pecho'&&o.end==null)running().filter(e=>e.type==='pecho').forEach(e=>upd(e,{end:start}));
+    addEv(o);toast(timer?'Cronómetro en marcha':'Registro guardado')}
+  closeSheet();render();
+}
+
+/* ---------- Copias ---------- */
+function exportData(){return JSON.stringify({app:'diario-bebe',version:1,exported:new Date().toISOString(),profile:S.profile,events:S.events.filter(e=>!e.demo),notes:S.notes},null,1)}
+const IN_ARTIFACT=/claude\.(ai|site)|claudeusercontent/.test(location.hostname);
+async function doExport(){
+  if(IN_ARTIFACT)return doCopy();
+  const txt=exportData(),name=`diario-bebe-${toDateInput(Date.now())}.json`;
+  try{const file=new File([txt],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Copia Diario del bebé'});markBackup();return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    markBackup('Copia descargada. Si no aparece, usa «Copiar datos».')}catch(e){toast('No se pudo exportar. Usa «Copiar datos».')}
+}
+function markBackup(msg){toast(msg||'Copia guardada')}
+async function doCopy(){const txt=exportData();try{await navigator.clipboard.writeText(txt);markBackup('Datos copiados. Pégalos en Notas o en un correo.')}catch(e){
+  openSheet(`<div class="panel-h"><h2>Copiar datos</h2><button class="icon-btn" data-act="close" aria-label="Cerrar">${ic('close')}</button></div><p class="sub">Selecciona todo el texto y cópialo.</p><textarea class="inp" id="copy-area" style="min-height:240px;font-family:var(--f-mono);font-size:12px" readonly>${esc(txt)}</textarea>`);
+  const t=$('#copy-area');t.focus();t.select()}}
+function parseImport(txt){try{const d=JSON.parse(txt);if(!d||!Array.isArray(d.events))throw 0;
+  const evs=d.events.filter(e=>e&&e.id&&TYPES[e.type]&&typeof e.start==='number');
+  ui.pendingImport={events:evs,notes:Array.isArray(d.notes)?d.notes.filter(n=>n&&n.id&&n.text):[],profile:d.profile||null}}
+  catch(e){ui.pendingImport={error:'El archivo no es una copia válida de Diario del bebé.'}}
+  const b=$('#imp-box');if(b)b.innerHTML=impBox()}
+function applyImport(){const p=ui.pendingImport;if(!p||p.error)return;const now=Date.now();let n=0;
+  for(const e of p.events){if(S.events.some(x=>x.id===e.id))continue;const it={...e,updated:e.updated||now,by:e.by||D.me};delete it.demo;delete it._rev;S.events.push(it);S.outbox.push({k:'ev',item:it});n++}
+  for(const x of p.notes){if(S.notes.some(y=>y.id===x.id))continue;const it={...x,updated:x.updated||now,by:x.by||D.me};delete it._rev;S.notes.push(it);S.outbox.push({k:'note',item:it});n++}
+  ui.pendingImport=null;save();syncSoon(50);toast(n?`${n} registros añadidos`:'No había nada nuevo');render()}
+
+/* ---------- Utilidades ---------- */
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2400)}
+function applyTheme(){const th=D.theme;if(th==='light'||th==='dark')document.documentElement.setAttribute('data-theme',th);else document.documentElement.removeAttribute('data-theme')}
+function armed(btn){if(btn.dataset.armed==='1')return true;const orig=btn.textContent;btn.dataset.armed='1';btn.textContent=btn.dataset.confirm;setTimeout(()=>{if(btn.isConnected){btn.dataset.armed='';btn.textContent=orig}},4000);return false}
+
+/* ---------- Paseo virtual ---------- */
+const TOUR=[
+ {title:'Bienvenida al Diario del bebé',text:'Aquí apuntas cuándo duerme, come y se cambia el pañal. Te enseño en 2 minutos qué puedes hacer y qué no.',
+  yes:['Lo que apunta uno aparece en el móvil del otro en unos segundos','Sin cobertura también puedes apuntar: se envía al volver la conexión']},
+ {view:'inicio',sel:'.quick',title:'Apuntar con un toque',text:'Los botones grandes registran al momento lo que más se repite. No hace falta rellenar nada.',
+  ex:'Empieza a mamar del pecho izquierdo: toca «Pecho izq.». El cronómetro arranca solo y lo verás arriba.'},
+ {view:'inicio',sel:'#live .lv',optional:true,title:'Lo que está pasando ahora',text:'Esta barra aparece mientras duerme o toma el pecho. Tócala para ver qué puedes hacer.',
+  ex:'A las 3:00 se despierta: barra, «Se despierta un rato». Cuando se vuelve a dormir: «Vuelve a dormir». Por la mañana: «Despertar definitivo».'},
+ {view:'inicio',sel:'.now',title:'Cuánto hace y qué toca',text:'Resume la última toma y si ahora está dormido o despierto.',
+  ex:'Pone «Hace 2 h 10 min · Pecho izquierdo» y debajo «Toca el derecho».'},
+ {view:'inicio',sel:'#fab',title:'El botón + para todo lo demás',text:'Biberón, comida, pañal, acontecimientos o algo que olvidaste apuntar. La hora se puede cambiar.',
+  ex:'Se te pasó un biberón de 90 ml a las 17:00: toca +, «Biberón», cambia la hora a las 17:00 y elige 90 ml.',
+  no:['No deja apuntar cosas en el futuro']},
+ {view:'diario',sel:'.tl-wrap',title:'El día de un vistazo',text:'Cada franja es un rato de sueño y cada gota una toma. La raya oscura marca la hora actual.',
+  ex:'Azul es la noche, turquesa las siestas y rosa los ratos despierto por la noche. Un número sobre una gota indica varias tomas seguidas.'},
+ {view:'diario',sel:'.seg.big',title:'Ver solo la noche',text:'Cambia entre el día completo y la noche, y usa las flechas de arriba para ir a días anteriores.',
+  ex:'Toca «Noche» para ver de 19:00 a 9:00 cuántas veces se despertó y cuánto estuvo despierto.'},
+ {view:'diario',sel:'.log',optional:true,title:'Corregir o borrar',text:'Toca cualquier registro de la lista para cambiarlo o borrarlo.',
+  ex:'Apuntaste un pañal a las 10:15 pero fue a las 9:45: tócalo, cambia la hora y guarda.'},
+ {view:'analisis',sel:'.kpis',title:'Cómo va la semana',text:'Medias de los últimos 7, 14 o 30 días comparadas con el periodo anterior.',
+  ex:'«Despertares por noche 2,7 · −0,5 vs 7 días antes» quiere decir que se despierta menos que la semana pasada.',
+  no:['No da diagnósticos ni consejos médicos: para cualquier duda, el pediatra']},
+ {view:'perfil',sel:'#sect-sync',title:'Compartido entre los dos',text:'Los dos entráis con el mismo código y cada uno con su nombre. Así sabéis quién apuntó cada cosa.',
+  ex:'Papá apunta un pañal a las 4:10. Mamá lo ve en su Diario, con «Papá» debajo, sin hacer nada.'},
+ {title:'Lo que esta app no hace',text:'Para que no haya sorpresas:',
+  no:['No envía avisos: para ver lo del otro hay que abrir la app','Si los dos apuntáis la misma toma, saldrá dos veces: borrad una','Sin internet no ves lo que apunta el otro hasta que vuelve la conexión','Solo entra quien tiene el código: no lo compartáis con nadie más']},
+ {view:'inicio',title:'¡Listo!',text:'Puedes repetir este paseo cuando quieras con «Cómo funciona» en Inicio o en Perfil.',
+  ex:'Empieza con la próxima toma: toca «Pecho izq.» o «Pecho der.» en Inicio.'}
+];
+let tour=null;
+function startTour(){closeSheet();D.tourSeen=true;saveD();tour={i:0,dir:1};$('#tour').hidden=false;document.body.style.overflow='hidden';showStep()}
+function endTour(){tour=null;$('#tour').hidden=true;document.body.style.overflow='';ui.dirty=false;render()}
+function tourGo(d){const n=tour.i+d;if(n<0)return;if(n>=TOUR.length)return endTour();tour.i=n;tour.dir=d;showStep()}
+function showStep(){
+  const st=TOUR[tour.i];
+  if(st.view&&ui.view!==st.view){ui.view=st.view;try{history.replaceState(null,'','#'+st.view)}catch(e){}render()}
+  const el=st.sel?document.querySelector(st.sel):null;
+  if(st.sel&&!el&&st.optional)return tourGo(tour.dir);
+  const li=(arr,c,i)=>arr&&arr.length?`<ul class="tour-li">${arr.map(t=>`<li class="${c}">${ic(i)}<span>${esc(t)}</span></li>`).join('')}</ul>`:'';
+  const ex=st.ex?`<div class="tour-ex"><b>Ejemplo</b>${esc(st.ex)}</div>`:'';
+  const last=tour.i===TOUR.length-1;
+  $('#tour-card').innerHTML=`<span class="tour-step">Paso ${tour.i+1} de ${TOUR.length}</span><div class="tour-dots" aria-hidden="true">${TOUR.map((_,k)=>`<i class="${k<=tour.i?'on':''}"></i>`).join('')}</div>
+   <h2 id="tour-t">${esc(st.title)}</h2><p>${esc(st.text)}</p>${ex}${li(st.yes,'y','check')}${li(st.no,'n','close')}
+   <div class="tour-nav">${last?'':'<button class="skip" data-act="tour-end">Saltar</button>'}${tour.i?'<button class="btn" data-act="tour-prev">Atrás</button>':''}<button class="btn pri" data-act="tour-next">${last?'Empezar a usarla':tour.i?'Siguiente':'Empezar el paseo'}</button></div>`;
+  if(last)$('#tour-card .tour-nav').style.justifyContent='flex-end';
+  if(el&&getComputedStyle(el).position!=='fixed'){const r=el.getBoundingClientRect(),lv=$('#live').getBoundingClientRect().height||0;window.scrollTo(0,Math.max(0,scrollY+r.top-lv-10))}
+  requestAnimationFrame(()=>placeTour(el));
+}
+function placeTour(el){
+  if(!tour)return;const spot=$('#tour-spot'),card=$('#tour-card');card.classList.remove('top','bottom','mid');
+  if(!el){spot.style.cssText='top:50%;left:50%;width:0;height:0';card.classList.add('mid');return}
+  const r=el.getBoundingClientRect(),p=6;
+  spot.style.cssText=`top:${r.top-p}px;left:${r.left-p}px;width:${r.width+2*p}px;height:${r.height+2*p}px;border-radius:${el.id==='fab'?'50%':'18px'}`;
+  const ch=card.offsetHeight;card.classList.add(r.bottom+p+ch+24<=innerHeight||r.top<innerHeight/2?'bottom':'top');
+}
+window.addEventListener('resize',()=>{if(tour)placeTour(TOUR[tour.i].sel?document.querySelector(TOUR[tour.i].sel):null)});
+
+/* ---------- Render principal ---------- */
+const VIEWS={inicio:['Inicio','home',vInicio],diario:['Diario','book',vDiario],analisis:['Análisis','chart',vAnalisis],notas:['Notas','note',vNotas],perfil:['Perfil','user',vPerfil]};
+function render(){
+  if(!D.code){$('#live').innerHTML='';$('#view').innerHTML=vLogin();$('#tabs').innerHTML='';$('#fab').hidden=true;return}
+  $('#fab').hidden=false;
+  renderLive();
+  const sx=$('#tlwrap')?$('#tlwrap').scrollLeft:0;
+  $('#view').innerHTML=VIEWS[ui.view][2]();
+  if($('#tlwrap')){$('#tlwrap').scrollLeft=ui.zoom&&!sx?Math.max(0,($('#tlwrap').scrollWidth*(new Date().getHours()/24))-120):sx}
+  $('#tabs').innerHTML=Object.entries(VIEWS).map(([k,[l,i]])=>`<a href="#${k}" ${ui.view===k?'aria-current="page"':''}>${ic(i)}${l}</a>`).join('');
+}
+function route(){if(tour)return;const h=location.hash.slice(1);ui.view=VIEWS[h]?h:'inicio';closeSheet();render();window.scrollTo(0,0)}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id,find=()=>S.events.find(e=>e.id===id);
+  if(b.dataset.confirm&&!armed(b))return;
+  switch(a){
+    case'toggle-live':ui.open=ui.open===id?null:id;renderLive();break;
+    case'stop':{const e=find();if(e){upd(e,{end:Date.now()});ui.open=null;toast(e.type==='pecho'?'Toma terminada':'Sueño terminado');render()}break}
+    case'wake-short':{const now=Date.now(),e=find();if(e)upd(e,{end:now});addEv({type:'despertar',start:now,end:null});ui.open=null;render();break}
+    case'back-sleep':{const now=Date.now(),e=find();if(e)upd(e,{end:now});addEv({type:'sueno',sub:'noche',start:now,end:null});ui.open=null;toast('Vuelve a dormir');render();break}
+    case'wake-final':finalWake();break;
+    case'switch-side':{const e=find();if(e)startBreast(e.sub==='izq'?'der':'izq');ui.open=null;render();break}
+    case'edit':{const e=find();if(e)openForm(e.type,e);break}
+    case'breast':startBreast(b.dataset.side);break;
+    case'sleep':startSleep();break;
+    case'form':openForm(b.dataset.type);break;
+    case'close':closeSheet();break;
+    case'timer':submitForm(true);break;
+    case'amt':$('#f-qty').value=b.dataset.v;break;
+    case'del-ev':if(editing){delEv(editing.id);closeSheet();toast('Registro borrado');render()}break;
+    case'day':{const n=addDays(ui.day,+b.dataset.d);if(n<=midnight(Date.now())){ui.day=n;render()}break}
+    case'zoom':ui.zoom=!ui.zoom;render();break;
+    case'tlf':ui.tl=b.dataset.v;render();break;
+    case'logf':ui.log=b.dataset.v;render();break;
+    case'bar':ui.sel[b.dataset.c]=+b.dataset.i;render();break;
+    case'add-note':{const t=val('note-new');if(!t)return toast('Escribe algo antes de guardar');const now=Date.now(),n={id:uid(),t:now,text:t,by:D.me,updated:now};S.notes.push(n);queue('note',n);toast('Nota guardada');render();break}
+    case'del-note':S.notes=S.notes.filter(n=>n.id!==id);queue('note',{id,deleted:true,updated:Date.now()});render();break;
+    case'export':doExport();break;
+    case'copy':doCopy();break;
+    case'imp-text':parseImport(val('imp-text'));break;
+    case'imp-merge':applyImport();break;
+    case'tour':startTour();break;
+    case'tour-next':tourGo(1);break;
+    case'tour-prev':tourGo(-1);break;
+    case'tour-end':endTour();break;
+    case'sync-now':sy.fail=0;sync().then(()=>toast(sy.state==='ok'?'Al día':'Sin conexión'));break;
+    case'logout':case'logout-now':logout();break;
+  }
+});
+$('#fab').innerHTML=ic('plus');$('#fab').addEventListener('click',pickType);
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(tour)endTour();else if(!$('#sheet').hidden)closeSheet()}});
+document.addEventListener('submit',async e=>{
+  if(e.target.id==='evform'){e.preventDefault();submitForm(false)}
+  else if(e.target.id==='login'){e.preventDefault();const me=val('l-me'),code=val('l-code'),err=$('#l-err'),go=$('#l-go');
+    if(!me){err.textContent='Escribe tu nombre.';return}if(!code){err.textContent='Escribe el código de acceso.';return}
+    err.textContent='';go.disabled=true;go.textContent='Entrando…';
+    try{await doLogin(me,code);ui.view='inicio';try{history.replaceState(null,'','#inicio')}catch(x){}render();loop();if(!D.tourSeen)setTimeout(startTour,400)}
+    catch(x){err.textContent=x instanceof TypeError?'No hay conexión. La primera vez necesitas internet.':x.message;go.disabled=false;go.textContent='Entrar'}}
+});
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(ui.dirty&&!busyEditing())refresh()},0)});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.name==='mode'){ui.mode=t.value;render()}
+  else if(t.name==='period'){ui.period=+t.value;ui.sel={};render()}
+  else if(t.id==='daypick'){const d=fromDateInput(t.value);if(d&&d<=midnight(Date.now())){ui.day=d;render()}}
+  else if(t.id==='p-name'){setProfile('name',t.value.trim())}
+  else if(t.id==='p-birth'){setProfile('birth',t.value)}
+  else if(t.id==='p-ns'&&t.value){setProfile('nightStart',t.value)}
+  else if(t.id==='p-ne'&&t.value){setProfile('nightEnd',t.value)}
+  else if(t.id==='p-me'&&t.value.trim()){D.me=t.value.trim();saveD();toast('Nombre cambiado')}
+  else if(t.name==='theme'){D.theme=t.value;saveD();applyTheme();render()}
+  else if(t.id==='imp-file'&&t.files&&t.files[0]){const r=new FileReader();r.onload=()=>parseImport(String(r.result));r.readAsText(t.files[0])}
+});
+window.addEventListener('hashchange',route);
+setInterval(()=>{tickClocks()},1000);
+setInterval(()=>{if(D.code&&!tour&&$('#sheet').hidden&&!busyEditing()&&(ui.view==='inicio'||ui.view==='diario'))render();else renderSync()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S&&D.code){sy.fail=0;sync();loop();if(!tour&&$('#sheet').hidden&&!busyEditing())render()}});
+window.addEventListener('online',()=>{if(S&&D.code){sy.fail=0;sync()}});
+
+/* ---------- Arranque ---------- */
+(async()=>{
+  S=await load();
+  if(!S||S.v!==2)S=blank();
+  S.profile=Object.assign(defaultProfile(),S.profile||{});S.notes=S.notes||[];S.events=S.events||[];S.outbox=S.outbox||[];if(typeof S.rev!=='number')S.rev=-1;
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  applyTheme();route();
+  if(D.code){sync();loop();if(!D.tourSeen)setTimeout(startTour,600)}
+  if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude\.(ai|site)|claudeusercontent/.test(location.hostname)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+})();
+})();
+</script>
+
+</body>
+</html>
