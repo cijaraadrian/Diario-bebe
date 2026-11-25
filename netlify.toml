@@ -5,6 +5,7 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["netlify/lib/**"]
 
 # La app y el service worker se revisan siempre para coger versiones nuevas.
 [[headers]]
@@ -27,3 +28,9 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
+
+# El panel de administración es la misma app en /admin
+[[redirects]]
+  from = "/admin"
+  to = "/index.html"
+  status = 200

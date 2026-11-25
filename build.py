@@ -1,7 +1,11 @@
-# Genera public/index.html a partir de src/app.html (cabecera PWA + app)
+# Genera public/index.html a partir de src/ (estilos, marcado, datos OMS y app) en un único archivo.
 import pathlib
 root=pathlib.Path(__file__).parent
-app=(root/'src/app.html').read_text()
+src=root/'src'
+css=(src/'styles.css').read_text()+(src/'styles-v3.css').read_text()
+markup=(src/'markup.html').read_text()
+who=(src/'who-lms.js').read_text()
+app=(src/'app.js').read_text()
 head='''<!doctype html>
 <html lang="es">
 <head>
@@ -14,12 +18,11 @@ head='''<!doctype html>
 <meta name="theme-color" content="#f6f2f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#16181e" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
-<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
-</head>
-<body>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}
 '''
-(root/'public/index.html').write_text(head+app+'\n</body>\n</html>\n')
-print('public/index.html listo')
+out=head+css+'\n</style>\n</head>\n<body>\n'+markup+'\n<script>\n'+who+'\n</script>\n<script>\n'+app+'\n</script>\n</body>\n</html>\n'
+(root/'public/index.html').write_text(out)
+print('public/index.html listo:',len(out),'bytes')

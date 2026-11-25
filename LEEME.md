@@ -1,71 +1,70 @@
-# Diario del bebé 2.0 · Netlify
+# Diario del bebé 3.0 · Netlify
 
-App web instalable en el iPhone (sin App Store) que comparte en tiempo real lo que apuntáis los dos.
+App web instalable en el iPhone (sin App Store) para varias familias. Cada familia es una cuenta con sus usuarios y sus bebés. El sueño es gratis y el resto son módulos de pago que activa el superadministrador desde `/admin`.
 
-- **Web**: `public/` (la app, el icono y el modo sin conexión).
-- **Servidor**: `netlify/functions/api.mjs`, una sola función que guarda los datos en **Netlify Blobs**, el almacenamiento incluido en Netlify. No hay base de datos que crear ni mantener.
-- **Acceso**: un código compartido que solo sabéis los dos, guardado como variable de entorno en Netlify (nunca en el código).
+- **Web**: `public/index.html`, generado desde `src/` con `python3 build.py`.
+- **Servidor**: `netlify/functions/api.mjs` (entrada) y `netlify/lib/core.mjs` (lógica). Los datos se guardan en **Netlify Blobs**, sin base de datos externa.
+- **Pruebas separadas**: producción usa el almacén `diario-bebe`. Los Deploy Previews y las ramas usan `diario-bebe-pruebas`, así que nunca escriben en los datos reales.
 
-## 1. Desplegar en Netlify
+## Variables de entorno en Netlify
 
-Elige una de las dos formas. Arrastrar la carpeta a «Netlify Drop» **no sirve**, porque así no se publica la función.
+En **Project configuration → Environment variables**, para todos los contextos:
 
-### Opción A: desde GitHub (recomendada)
-
-1. Sube el contenido de esta carpeta a tu repositorio `diario-bebe` (no contiene datos ni el código de acceso).
-2. En Netlify: **Add new site → Import an existing project → GitHub** y elige `diario-bebe`.
-3. Netlify lee `netlify.toml` y lo configura todo solo. Pulsa **Deploy**.
-
-Cada vez que subas un cambio al repositorio, Netlify vuelve a publicar.
-
-### Opción B: con la CLI desde tu servidor Linux
-
-```bash
-cd diario-bebe-netlify
-npm install
-npx netlify-cli login
-npx netlify-cli init            # crea el sitio la primera vez
-npx netlify-cli deploy --prod
-```
-
-## 2. Poner el código de acceso
-
-En Netlify: **Site configuration → Environment variables → Add a variable**
-
-- Key: `ACCESS_CODE`
-- Value: una frase que solo sepáis los dos, por ejemplo `lucia-duerme-poco-2026`
-
-Después haz **Deploys → Trigger deploy** para que la función lo lea.
-Si se os olvida o queréis cambiarlo, cámbialo aquí: los móviles pedirán el nuevo al abrir.
-
-## 3. Instalar en cada iPhone
-
-1. Abre la dirección del sitio (por ejemplo `https://diario-bebe.netlify.app`) en **Safari**.
-2. Escribe tu nombre («Mamá», «Papá»…) y el código.
-3. Compartir → «Añadir a pantalla de inicio» y ábrela siempre desde el icono.
-
-## Cómo se comporta
-
-| Situación | Qué pasa |
+| Variable | Para qué |
 | --- | --- |
-| Uno apunta algo | El otro lo ve en unos 8 segundos con la app abierta, o nada más abrirla |
-| Sin cobertura | Se apunta igual; se envía al volver la conexión («Sin conexión · N cambios por enviar») |
-| Los dos guardan a la vez | No se pierde nada: el servidor reintenta hasta guardar los dos cambios |
-| Los dos editan el mismo registro | Gana el último cambio |
-| Cambio de móvil | Entras con el código y se descargan todos los datos |
+| `ADMIN_USER` | Tu usuario del panel `/admin` |
+| `ADMIN_PASSWORD` | Tu contraseña del panel. Que sea larga |
 
-La app solo pregunta al servidor mientras está en pantalla, así que el consumo del plan gratuito de Netlify es muy bajo.
+`ACCESS_CODE` (el código compartido de la v2) ya no se usa y puedes borrarlo.
+
+Después de añadir o cambiar variables, vuelve a desplegar (**Deploys → Trigger deploy**).
+
+## Pasar de la v2 a la v3 (vuestros datos)
+
+1. Añade `ADMIN_USER` y `ADMIN_PASSWORD`.
+2. Publica la v3 (fusiona la rama en `main`).
+3. Entra en `https://<tu-sitio>.netlify.app/admin`.
+4. En «Datos de la versión anterior», pulsa **Migrar datos**. Se crea la cuenta «Casa» con vuestro bebé, todos los registros y todos los módulos para siempre. Antes se guarda una copia de los datos antiguos.
+5. En la ficha de «Casa», crea vuestros dos usuarios: uno **Titular** y otro **Miembro**.
+6. En cada iPhone, abre la app y entra con el usuario y la contraseña provisional. La primera vez se pide elegir una propia.
+
+## Día a día del superadministrador (`/admin`)
+
+- **Nueva familia**: crea la cuenta y su titular de una vez. Te da los datos para pasárselos.
+- **Pagos pendientes**: cuando una familia pulsa «Ya he hecho el Bizum», aparece aquí. Confirma 1, 3 o 12 meses (o «para siempre» si es el pack) y se activa solo.
+- **Ficha de cada familia**: activar módulos (+1 mes, +3, +12, prueba), quitar, pack «Todo para siempre», registrar un pago con otras fechas, usuarios, roles, contraseñas y ajustes por usuario.
+- **Ajustes de venta**: tu número de Bizum, precios que se muestran y días de prueba.
+- El panel **no muestra ningún dato de los bebés**.
+
+## Módulos
+
+| Módulo | Qué incluye |
+| --- | --- |
+| Sueño | Gratis: siestas, noche, despertares, línea del día |
+| Tomas | Pecho con cronómetro, biberón |
+| Comidas | Primeros alimentos |
+| Pañales | Pis y caca |
+| Salud | Vacunas, médico, medicación, temperatura |
+| Notas | Notas fechadas |
+| Análisis | Gráficas de 7, 14 y 30 días |
+| Compartir en familia | Más usuarios en la cuenta (sin él solo entra el titular) |
+| Varios bebés | Segundo bebé y siguientes |
+| Baños | Baño con temperatura del agua |
+| Próxima siesta | Predicción por edad y por cómo duerme |
+| Crecimiento | Peso, talla y cabeza con percentiles de la OMS |
+| Hitos y dientes | Hitos con foto y mapa de dientes |
+| Informe para el pediatra | Resumen imprimible o en PDF |
+
+El servidor comprueba los módulos en cada cambio: aunque alguien manipule la app, no puede guardar registros de un módulo que no tiene.
+
+## Fuentes de datos de referencia
+
+- Percentiles: patrones de crecimiento infantil de la OMS (0-2 años), tomados del paquete oficial `anthro` de la OMS (`src/who-lms.js`).
+- Ventanas de vigilia para «Próxima siesta»: tablas orientativas publicadas por Napper y Taking Cara Babies.
 
 ## Actualizar la app
 
-1. Edita `src/app.html`.
-2. Ejecuta `python3 build.py`, que genera `public/index.html`.
-3. Cambia `diario-bebe-v2` por `diario-bebe-v3` en `public/sw.js`.
-4. Despliega.
-
-Los datos no se tocan, porque viven en Netlify Blobs.
-
-## Ver o descargar los datos
-
-- En la app: Perfil → «Exportar copia».
-- En Netlify: **Blobs → diario-bebe → data** (un JSON con todo).
+1. Edita `src/`.
+2. Ejecuta `python3 build.py`.
+3. Cambia el número de `CACHE` en `public/sw.js`.
+4. Sube a GitHub: Netlify despliega solo.
